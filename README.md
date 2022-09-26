@@ -1,4 +1,4 @@
-# O que é preciso ser feito?
+# O que é preciso ser feito
 
 O objetivo do trabalho prático é implementar e avaliar modelos de recuperação de informação usando a
 biblioteca de busca por similaridade FAISS (Facebook AI Similarity Search). A implementação deve ser feita
@@ -23,3 +23,11 @@ calcule também os valores para as métricas P@5 e P@10 médios, MRR(Q) consider
 S h = 5 e trace o histograma da precisão-R para as 20 primeiras consultas;
 - Avalie cada codificação de embeddings separadamente, apresente os seus respectivos gráficos de
 Precisão x Revocação e os resultados das demais métricas descritas acima.
+
+# Organização do repo
+
+O repositório está organizado da seguinte forma:
+
+- cfc: Contém os arquivos brutos da coleção
+- notebooks: Contém os códigos e as execuções dos experimentos
+- outputs: Contém a coleção e as consultas processadas
