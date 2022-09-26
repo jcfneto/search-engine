@@ -1,4 +1,4 @@
-# Information Retrieval
+# O que é preciso ser feito?
 
 O objetivo do trabalho prático é implementar e avaliar modelos de recuperação de informação usando a
 biblioteca de busca por similaridade FAISS (Facebook AI Similarity Search). A implementação deve ser feita
