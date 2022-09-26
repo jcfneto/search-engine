@@ -1,0 +1,93 @@
+INTRODUCTION
+============
+
+The Cystic Fibrosis Database (CF) consists of seven files:
+
+	cf74 .. cf79 ==> 1,239 documents published from 1974 to 1979
+			 discussing Cystic Fibrosis aspects.
+
+	cfquery      ==> a set of 100 queries with the respective 
+			 relevant documents as answers.
+
+
+
+DOCUMENT FILES
+==============
+
+These are: cf74, cf75, cf76, cf77, cf78, and cf79.
+
+Each document includes 11 fields as follows:
+
+  PN	PAPER NUMBER: The first two digits give the year of publication, 
+	and the rest three digits range from 1 to the number of docs 
+	published that year.
+
+  RN	RECORD NUMBER: serial id number varying from 1 to 1,239.
+
+  AN    MEDLINE ACESSION NUMBER: CF is a subset of the MEDLINE database.
+
+  AU    AUTHOR(S).
+
+  TI    TITLE.
+
+  SO    SOURCE: Bibliographic citation of source.
+
+  MJ    MAJOR SUBJECTS: The Medical Subject Headings (MeSH) and subheadings
+	representing the major subjects of the document. The Medical Subject
+	Headings are shown in capital letters and have been assigned by 
+	expert indexers. The two-letter symbols are subject subheadings, also
+	assigned manually from a controlled vocabulary (see the MeSH vocabulary
+	published by the National Library of Medicine).  
+
+  MN    MINOR SUBJECTS: The Medical Subject Headings (MeSH) and subheadings
+  	representing the minor subjects of the document. The Medical Subject
+	Headings are shown in capital letters and have been assigned by
+	expert indexers. The two-letter symbols are subject subheadings, also
+	assigned manually from a controlled vocabulary (see the MeSH vocabulary
+	published by the National Library of Medicine).
+	
+ AB/EX  ABSTRACT/EXTRACT: The abstract of the document, or in the case of a
+	document with no published abstract, an extract from the text.
+
+  RF 	REFERENCES: The complete list of references appearing in the document,
+	excluding private comunications and unpublished documents.
+
+  CT	CITATIONS: A comprehensive list of citations to the document, as indexed
+	in the SCISEARCH/DIAOLG files.
+
+
+QUERY FILE
+==========
+
+It is: cfquery.
+
+Each query includes 4 fields:
+
+  QN	Query number.
+
+  QU    Query text.
+
+  NR	Number of relevant documents.
+
+  RD    Relevant docs AND relevant scores. The record number (RN) of each
+	document is followed by the relevance scores from 4 different sources:
+	REW (one of the authors), faculty colleagues of REW, post-doctorate
+	associate of REW, and JBW (other author and a medical bibliographer).
+	The relevance scores vary from 0 to 2 with the following meaning:
+
+		2   HIGHLY relevant
+		1   MARGINALLY relevant
+		0   NOT relevant
+
+        Example of a document in RD:
+
+		513 0010  
+
+		===> Doc number: 513
+	             Rel score by REW: NOT relevant.
+		     Rel score by REW colleagues: NOT relevant.
+		     Rel score by REW post-doctorates: MARGINALLY relevant
+		     Rel score by JBW: NOT relevant.
+
+
+
