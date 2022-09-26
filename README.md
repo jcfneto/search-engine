@@ -28,6 +28,6 @@ Precisão x Revocação e os resultados das demais métricas descritas acima.
 
 O repositório está organizado da seguinte forma:
 
-- cfc: Contém os arquivos brutos da coleção
-- notebooks: Contém os códigos e as execuções dos experimentos
-- outputs: Contém a coleção e as consultas processadas
+- `cfc`: Contém os arquivos brutos da coleção
+- `notebooks`: Contém os códigos e as execuções dos experimentos
+- `outputs`: Contém a coleção e as consultas processadas
