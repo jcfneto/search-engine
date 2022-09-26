@@ -1,3 +1,4 @@
+import time
 import faiss
 import numpy as np
 
@@ -301,7 +302,9 @@ def search(idx, k, vector_type, queries, rel_docs, size, threshold):
     results = {}
     for qn, q in queries.items():
         print(f'{int(qn)}/{n_queries}', end='\r')
+        start = time.time()
         D, I = idx.search(q[vector_type], k)
+        end = time.time()
         returned_docs = I[0] + 1
         r = metrics(returned_docs, rel_docs[qn], size, threshold)
         results[qn] = {'docs_retrieved': returned_docs,
@@ -311,5 +314,6 @@ def search(idx, k, vector_type, queries, rel_docs, size, threshold):
                        'precision_recall': r[3],
                        'p@5': r[4],
                        'p@10': r[5],
-                       'reciprocal_rank': r[6]}
+                       'reciprocal_rank': r[6],
+                       'query_execution_time': end - start}
     return results
