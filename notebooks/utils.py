@@ -5,6 +5,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from scipy.stats import ttest_ind
 from scipy.interpolate import interp1d
 
 
@@ -230,6 +231,26 @@ def index_ivfflat(vectors, nlist):
     idx.train(vectors)
     idx.add(vectors)
     return idx
+
+
+def t_test(data):
+    """
+    Description: Calculate the T-test for the means of two independent samples of scores.
+    
+    Args:
+        data:
+    """
+    pre = data.Preprocessing.unique()
+    var = data.variable.unique()
+    for v in var:
+        print('-' * 80, f'\n{v}\n')
+        tmp = data[data.variable == v]
+        means = [tmp[tmp.Preprocessing == p].value.values for p in pre]
+        means = [(v, round(np.mean(v), 3)) for v in means]
+        for i in range(len(means)):
+            print(f'Average Precision - {pre[i]}: {means[i][1]}.')
+        print(f'Absolute Diferrence: {round(abs(means[0][1] - means[1][1]), 3)}.')
+        print(f'p-Value: {round(ttest_ind(means[0][0], means[1][0])[1], 3)}.')
 
 
 def plot_recall_levels(results, title):
