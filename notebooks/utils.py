@@ -1,16 +1,33 @@
 import time
 import faiss
 import numpy as np
+import pandas as pd
 
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from faiss.swigfaiss import IndexFlat, IndexIVFFlat
+
 from scipy.stats import ttest_ind
 from scipy.interpolate import interp1d
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sentence_transformers import SentenceTransformer
 
-def split_join(file, data, tag, exclude):
-    """Extract only interest tags."""
+
+def split_join(file: list, data: dict, tag: str, exclude: tuple) -> dict:
+    """
+    Extract only interest tags.
+
+    Args:
+        file: Raw document.
+        data: Dictionary to save the results.
+        tag: Tags to keep.
+        exclude: Tags to exclude.
+
+    Returns:
+        data: Precessed document.
+    """
     for line in file:
         line = line.replace('\n', '').replace('\x1a', '')
         if line.startswith(tag):
@@ -20,14 +37,19 @@ def split_join(file, data, tag, exclude):
     return data
 
 
-def convert_queries(queries, embedding_model, tfidf_transformer):
+def convert_queries(queries: dict,
+                    embedding_model: SentenceTransformer,
+                    tfidf_transformer: TfidfVectorizer) -> dict:
     """
-    Description: Vectorizes queries based on embeddings and TF-IDF.
+    Vectorizes queries based on embeddings and TF-IDF.
 
     Args:
-        queries:
-        embedding_model:
-        tfidf_transformer:
+        queries: Dict with raw queries.
+        embedding_model: Pre-trained sentece-BERT model.
+        tfidf_transformer: TF-IDF vectorized.
+
+    Returns:
+        queries: Precessed queries.
     """
     for qn, q in queries.items():
         # embedding
@@ -43,15 +65,20 @@ def convert_queries(queries, embedding_model, tfidf_transformer):
     return queries
 
 
-def confussion_matrix(relevant_pred, relevant_true, collection_size):
+def confussion_matrix(relevant_pred: np.array,
+                      relevant_true: list,
+                      collection_size: int) -> dict:
     """
-    Description: Compute true positive (tp), false positive (fp), false negative
-                 (fn) and true negative (tn).
+    Compute true positive (tp), false positive (fp), false negative (fn) and
+    true negative (tn).
 
     Args:
-        relevant_pred:
-        relevant_true:
-        collection_size:
+        relevant_pred: Relevant documents retrieved.
+        relevant_true: Relevant documents expected.
+        collection_size: Number of documents in the collection.
+
+    Returns:
+        Dict with hits, tp, fp, fn and tn.
     """
     hits = [r for r in relevant_pred if r in relevant_true]
     tp = len(hits)
@@ -61,34 +88,43 @@ def confussion_matrix(relevant_pred, relevant_true, collection_size):
     return {'hits': hits, 'tp': tp, 'fp': fp, 'fn': fn, 'tn': tn}
 
 
-def precision(tp, fp):
+def precision(tp: int, fp: int) -> float:
     """
-    Description: Compute precision metric.
+    Compute precision metric.
 
     Args:
-        tp:
-        fp:
+        tp: True positives.
+        fp: False positives.
+
+    Returns:
+        Rate of relevant instances among the retrieved instances.
     """
     return tp / (tp + fp)
 
 
-def recall(tp, fn):
+def recall(tp: int, fn: int) -> float:
     """
-    Description: Compute recall metric.
+    Compute recall metric.
 
     Args:
-        tp:
-        fn:
+        tp: True positives.
+        fn: False negatives.
+
+    Returns:
+        Rate of relevant instances that were retrieved
     """
     return tp / (tp + fn)
 
 
-def adjustment(x):
+def adjustment(x: np.array) -> np.array:
     """
-    Description:
+    Adjustments applied to interpolation output.
 
     Args:
-        x:
+        x: Interpolation results.
+
+    Returns:
+        x: Adjusted interpolation values.
     """
     x[x > 1] = 1
     x[x < 0] = 0
@@ -96,13 +132,17 @@ def adjustment(x):
     return x
 
 
-def precision_recall(relevant_pred, relevant_true):
+def precision_recall(relevant_pred: np.array,
+                     relevant_true: list) -> np.array:
     """
-    Description: Computes 11 standard recall levels.
+    Computes 11 standard recall levels.
 
     Args:
-        relevant_pred:
-        relevant_true:
+        relevant_pred: Relevant documents retrieved.
+        relevant_true: Relevant documents expected.
+
+    Returns:
+        Interpolated precision values for the 11 levels of recall.
     """
 
     # variables to save hits, precision and recall
@@ -129,59 +169,79 @@ def precision_recall(relevant_pred, relevant_true):
                  np.array([new_precision]).T]
 
 
-def p_at_n(relevant_pred, relevant_true, n):
+def p_at_n(relevant_pred: np.array,
+           relevant_true: list,
+           n: int) -> float:
     """
-    Description: Precision at n, to calculate the precision in the top n
-    retrieved documents.
+    Precision at n, to calculate the precision in the top n retrieved
+    documents.
 
     Args:
-        relevant_pred:
-        relevant_true:
-        n:
+        relevant_pred: Relevant documents retrieved.
+        relevant_true: Relevant documents expected.
+        n: Represents the number of ordered documents to be taken into
+           account.
+
+    Returns:
+        Precision at n documents.
     """
     return len([d for d in relevant_pred[:n] if d in relevant_true]) / n
 
 
-def reciprocal_rank(relevant_pred, relevant_true, threshold):
+def reciprocal_rank(relevant_pred: np.array,
+                    relevant_true: list,
+                    threshold: int) -> float:
     """
-    Description: Computes Reciprocal rank.
+    Computes Reciprocal rank.
 
     Args:
-        relevant_pred:
-        relevant_true:
-        threshold:
+        relevant_pred: Relevant documents retrieved.
+        relevant_true: Relevant documents expected.
+        threshold: Threshold for ranking position.
+
+    Returns:
+        Position of the first relevant document retrieved.
     """
-    for pos, doc in enumerate(relevant_pred):
+    for pos, doc in enumerate(relevant_pred[:threshold]):
         if doc in relevant_true:
-            return pos + 1 if pos < threshold else 0
+            return pos + 1
     return 0
 
 
-def mean_reciprocal_rank(rr):
+def mean_reciprocal_rank(rr: dict) -> float:
     """
     Computes mean reciprocal rank.
 
     Args:
-        rr:
+        rr: Dictionary with all calculated metrics.
+
+    Returns:
+        Mean reciprocal rank.
     """
     mrr = 0
     for doc, results in rr.items():
-        mrr += results['reciprocal_rank']
+        if results['reciprocal_rank'] > 0:
+            mrr += 1 / results['reciprocal_rank']
     mrr /= len(rr)
-    return mrr
+    return round(mrr, 3)
 
 
-def metrics(relevant_pred, relevant_true, collection_size, threshold):
+def metrics(relevant_pred: np.array,
+            relevant_true: list,
+            collection_size: int,
+            threshold: int) -> tuple:
     """
-    Description: Compute precision, recall, precision vs recall, precision at
-    n,
-    ...
+    Compute precision, recall, precision vs recall, precision at
+    n documents and reciprocal rank.
 
     Args:
-        relevant_pred:
-        relevant_true:
-        collection_size:
-        threshold:
+        relevant_pred: Relevant documents retrieved.
+        relevant_true: Relevant documents expected.
+        collection_size: Number of documents in the collection.
+        threshold: Threshold for ranking position.
+
+    Returns:
+        All metrics.
     """
 
     # compute the terms
@@ -200,13 +260,16 @@ def metrics(relevant_pred, relevant_true, collection_size, threshold):
     return terms['hits'], p, r, p_r, p5, p10, rr
 
 
-def index_flat(vectors, add_vectors=True):
+def index_flat(vectors: np.array, add_vectors: bool = True) -> IndexFlat:
     """
-    Description: Builds the index.
+    Builds the flat index.
 
     Args:
-        vectors:
-        add_vectors:
+        vectors: Vector documents.
+        add_vectors: If true indexes the vectors.
+
+    Returns:
+        idx: Index with the indexed documents.
     """
     idx = faiss.IndexFlat(vectors.shape[1], faiss.METRIC_INNER_PRODUCT)
     if add_vectors:
@@ -214,13 +277,16 @@ def index_flat(vectors, add_vectors=True):
     return idx
 
 
-def index_ivfflat(vectors, nlist):
+def index_ivfflat(vectors: np.array, nlist: int) -> IndexIVFFlat:
     """
-    Description:
+    Builds the IVFFlat index.
 
     Args:
-        vectors:
-        nlist:
+        vectors: Vector documents.
+        nlist: Number of document clusters.
+
+    Returns:
+        idx: Index with the indexed documents.
     """
     quantizer = index_flat(vectors, False)
     idx = faiss.IndexIVFFlat(
@@ -233,12 +299,15 @@ def index_ivfflat(vectors, nlist):
     return idx
 
 
-def t_test(data):
+def t_test(data: pd.DataFrame) -> None:
     """
-    Description: Calculate the T-test for the means of two independent samples of scores.
+    Calculate the T-test for the means of two independent samples of scores.
     
     Args:
-        data:
+        data: Dataframe with the results to be tested.
+
+    Returns:
+        None.
     """
     pre = data.Preprocessing.unique()
     var = data.variable.unique()
@@ -249,17 +318,21 @@ def t_test(data):
         means = [(v, round(np.mean(v), 3)) for v in means]
         for i in range(len(means)):
             print(f'Average Precision - {pre[i]}: {means[i][1]}.')
-        print(f'Absolute Diferrence: {round(abs(means[0][1] - means[1][1]), 3)}.')
+        print(f'Absolute Diferrence: '
+              f'{round(abs(means[0][1] - means[1][1]), 3)}.')
         print(f'p-Value: {round(ttest_ind(means[0][0], means[1][0])[1], 3)}.')
 
 
-def plot_recall_levels(results, title):
+def plot_recall_levels(results: dict, title: str) -> None:
     """
-    Description: Plot the 11 standard recall levels.
+    Plot the 11 standard recall levels.
 
     Args:
-        results:
-        title:
+        results: Precision and recall values.
+        title: Plot title.
+
+    Returns:
+        None.
     """
     colors = ['k', 'r', 'b', 'g']
     for i in range(len(results)):
@@ -273,13 +346,16 @@ def plot_recall_levels(results, title):
     plt.grid(axis='y')
 
 
-def p_at(results, title):
+def p_at(results: pd.DataFrame, title: str) -> None:
     """
-    Description: Violin plot for precision at n.
+    Violin plot for precision at n.
 
     Args:
-        results:
-        title:
+        results: Values for precision at n documents.
+        title: Plot title.
+
+    Returns:
+        None.
     """
     plt.figure(figsize=(8, 4))
     sns.violinplot(y='variable', x='value', hue='Preprocessing',
@@ -292,13 +368,16 @@ def p_at(results, title):
     plt.show()
 
 
-def mrr_plot(results, title):
+def mrr_plot(results: pd.DataFrame, title: str) -> None:
     """
-    Description: Plot histogram for MRR results.
+    Plot histogram for MRR results.
 
     Args:
-        results:
-        title:
+        results: Values for mean reciprocal rank.
+        title: Plot title.
+
+    Returns:
+        None.
     """
     sns.countplot(x='value', hue='Type', data=results)
     plt.xlabel('Reciprocal Rank'), plt.ylabel('Count')
@@ -306,18 +385,27 @@ def mrr_plot(results, title):
     plt.grid(axis='y')
 
 
-def search(idx, k, vector_type, queries, rel_docs, size, threshold):
+def search(idx: IndexFlat or IndexIVFFlat,
+           k: int,
+           vector_type: str,
+           queries: dict,
+           rel_docs: dict,
+           size: int,
+           threshold: int) -> dict:
     """
-    Description:
+    Performs queries and computes metrics.
 
     Args:
-        idx:
-        k:
-        vector_type:
-        queries:
-        rel_docs:
-        size:
-        threshold:
+        idx: Indexing with the indexed documents.
+        k: Number of documents to be retrieved.
+        vector_type: 'TF-IDF' or 'embedding'.
+        queries: Processed queries.
+        rel_docs: Expected documents.
+        size: Number of documents in the collection.
+        threshold: Threshold for ranking position.
+
+    Returns:
+        results: All metrics.
     """
     n_queries = len(queries)
     results = {}
